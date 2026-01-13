@@ -7,8 +7,11 @@
     <title>Warung Syifa - Kalkulator Harian</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Ganti ke html2canvas (Lebih ringan & Hasil Gambar) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -164,9 +167,9 @@
                 </div>
             </div>
 
-            <button x-show="isReportVisible" @click="downloadPDF()"
+            <button x-show="isReportVisible" @click="downloadImage()"
                 class="w-full mt-3 bg-red-600 text-white py-2 rounded-lg text-xs font-bold hover:bg-red-700 flex items-center justify-center gap-2">
-                <i class="fa-solid fa-file-pdf"></i> Download PDF
+                <i class="fa-solid fa-image"></i> Download Struk (Gambar)
             </button>
 
             <!-- DAFTAR BARANG SECTION -->
@@ -340,6 +343,54 @@
 
                         this.isReportVisible = true;
                         document.getElementById('report-content').classList.remove('hidden');
+                    },
+
+                    downloadImage() {
+                        // 1. Setup Source & Clone
+                        const original = document.getElementById('report-content');
+
+                        // Buat Clone (Duplikat) untuk difoto
+                        const clone = original.cloneNode(true);
+                        clone.id = 'capture-area';
+                        clone.style.display = 'block'; // Pastikan terlihat
+                        clone.style.position = 'fixed'; // Di atas segalanya
+                        clone.style.top = '0';
+                        clone.style.left = '0';
+                        clone.style.width = '350px'; // Lebar pas struk HP
+                        clone.style.zIndex = '9999';
+                        clone.style.background = 'white';
+                        clone.style.padding = '20px';
+                        clone.classList.remove('hidden');
+                        document.body.appendChild(clone);
+
+                        const filename = `Struk_WarungSyifa_${this.filterStart}.jpg`;
+                        const btn = document.activeElement;
+                        const originalText = btn.innerHTML;
+                        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...';
+
+                        // 2. Foto Clone tersebut
+                        setTimeout(() => {
+                            html2canvas(clone, {
+                                scale: 2, // Biar HD
+                                useCORS: true,
+                                backgroundColor: '#ffffff',
+                                scrollY: 0
+                            }).then(canvas => {
+                                // 3. Download Gambar
+                                const link = document.createElement('a');
+                                link.download = filename;
+                                link.href = canvas.toDataURL("image/jpeg", 0.9);
+                                link.click();
+
+                                // Cleanup
+                                document.body.removeChild(clone);
+                                btn.innerHTML = originalText;
+                            }).catch(err => {
+                                alert("Gagal Simpan Gambar: " + err);
+                                if (document.body.contains(clone)) document.body.removeChild(clone);
+                                btn.innerHTML = originalText;
+                            });
+                        }, 500);
                     },
 
                     downloadPDF() {
