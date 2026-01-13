@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warung Syifa - Kalkulator Harian</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#16a34a',
+                        secondary: '#f97316',
+                        dark: '#1e293b',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4" x-data="calculator()">
+
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden border border-gray-200">
+
+        <!-- Header -->
+        <div class="bg-primary p-6 text-white text-center">
+            <h1 class="text-2xl font-bold mb-1">Warung Syifa</h1>
+            <p class="text-sm opacity-90">Kalkulator Harian Simple</p>
+            <p class="text-xs font-mono opacity-75 mt-2 bg-white/20 inline-block px-3 py-1 rounded-full"
+                x-text="currentDate"></p>
+        </div>
+
+        <div class="p-6 space-y-6">
+
+            <!-- Input: Total Belanja -->
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-2">
+                    <i class="fa-solid fa-cart-shopping mr-2 text-blue-500"></i>Total Belanja (Modal)
+                </label>
+                <div class="relative">
+                    <span class="absolute left-4 top-3 text-gray-500 font-bold">Rp</span>
+                    <input type="text" x-model="formattedBelanja" @input="formatInput('belanja')"
+                        class="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-300 text-lg font-bold focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+                        placeholder="0">
+                </div>
+            </div>
+
+            <!-- Display: Keuntungan 20% -->
+            <div class="bg-green-50 p-4 rounded-xl border border-green-200">
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-sm font-bold text-green-800">
+                        <i class="fa-solid fa-chart-line mr-2"></i>Target Keuntungan (20%)
+                    </span>
+                    <span class="text-[10px] bg-green-200 text-green-800 px-2 py-0.5 rounded-full font-bold">AUTO</span>
+                </div>
+                <div class="text-3xl font-bold text-green-600 text-right" x-text="formatRupiah(profit)"></div>
+                <div class="text-right text-[10px] text-green-500 mt-1">
+                    (Modal + Untung = <span x-text="formatRupiah(belanja + profit)"></span>)
+                </div>
+            </div>
+
+            <!-- Input: Pengeluaran Makan -->
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-2">
+                    <i class="fa-solid fa-utensils mr-2 text-orange-500"></i>Pengeluaran Makan Harian
+                </label>
+                <div class="relative">
+                    <span class="absolute left-4 top-3 text-gray-500 font-bold">Rp</span>
+                    <input type="text" x-model="formattedMakan" @input="formatInput('makan')"
+                        class="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-300 text-lg font-bold focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                        placeholder="0">
+                </div>
+            </div>
+
+            <!-- Result: Sisa Bersih -->
+            <div class="border-t border-gray-100 pt-4">
+                <div class="flex justify-between items-center text-sm text-gray-500 mb-1">
+                    <span>Sisa Bersih (Untung - Makan)</span>
+                </div>
+                <div class="text-2xl font-bold text-right" :class="netProfit >= 0 ? 'text-blue-600' : 'text-red-500'"
+                    x-text="formatRupiah(netProfit)">
+                </div>
+            </div>
+
+            <!-- Reset Button -->
+            <button @click="reset()"
+                class="w-full py-3 text-gray-400 text-sm font-bold hover:text-red-500 transition-colors">
+                <i class="fa-solid fa-rotate-left mr-1"></i> Reset Data
+            </button>
+
+        </div>
+
+        <!-- DAFTAR BARANG SECTION -->
+        <div class="border-t border-gray-200 p-6 bg-gray-50">
+            <h3 class="font-bold text-gray-700 mb-4 flex items-center">
+                <i class="fa-solid fa-list mr-2 text-blue-600"></i> Daftar Barang
+            </h3>
+
+            <!-- Add Item Form -->
+            <div class="flex gap-2 mb-4">
+                <input type="text" x-model="newItemName" placeholder="Nama Barang"
+                    class="flex-1 px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:border-blue-500">
+                <input type="number" x-model="newItemPrice" placeholder="Harga"
+                    class="w-24 px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:border-blue-500">
+                <button @click="addItem()" class="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700">
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+            </div>
+
+            <!-- Search -->
+            <div class="relative mb-3">
+                <i class="fa-solid fa-search absolute left-3 top-2.5 text-gray-400 text-xs"></i>
+                <input type="text" x-model="searchQuery" placeholder="Cari harga barang..."
+                    class="w-full pl-8 pr-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-blue-500">
+            </div>
+
+            <!-- List -->
+            <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                <template x-for="(item, index) in filteredItems" :key="item.id">
+                    <div
+                        class="bg-white p-3 rounded-lg border border-gray-200 flex justify-between items-center shadow-sm">
+                        <div>
+                            <div class="font-bold text-gray-700 text-sm" x-text="item.name"></div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="font-bold text-green-600 text-sm" x-text="formatRupiah(item.price)"></span>
+                            <button @click="deleteItem(item)"
+                                class="text-gray-300 hover:text-red-500 transition-colors">
+                                <i class="fa-solid fa-trash text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                </template>
+                <div x-show="filteredItems.length === 0" class="text-center text-gray-400 text-xs py-4 italic">
+                    Belum ada barang.
+                </div>
+            </div>
+        </div>
+
+        <!-- CLOUD SYNC SECTION -->
+        <div class="border-t border-gray-200 p-6 bg-blue-50">
+            <h3 class="font-bold text-blue-800 mb-2 flex items-center text-sm">
+                <i class="fa-brands fa-google-drive mr-2"></i> Cloud Sync (Google Sheet)
+            </h3>
+
+            <input type="text" x-model="googleScriptUrl" placeholder="Tempel URL Google Apps Script..."
+                class="w-full px-3 py-2 rounded-lg border border-blue-200 text-xs mb-3 focus:outline-none focus:border-blue-500">
+
+            <div class="flex gap-2">
+                <button @click="syncToGoogle()"
+                    class="flex-1 bg-blue-600 text-white py-2 rounded-lg text-xs font-bold hover:bg-blue-700 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> Push
+                </button>
+                <button @click="pullFromGoogle()"
+                    class="flex-1 bg-white text-blue-600 border border-blue-600 py-2 rounded-lg text-xs font-bold hover:bg-blue-50 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-cloud-arrow-down"></i> Pull
+                </button>
+            </div>
+            <p class="text-[9px] text-blue-400 mt-2 text-center">Push = Kirim ke Cloud | Pull = Ambil dari Cloud</p>
+        </div>
+
+        <div class="bg-gray-100 p-3 text-center text-[10px] text-gray-400 border-t border-gray-200">
+            Powered by <a href="https://zensheet.my.id" target="_blank"
+                class="font-bold hover:text-blue-600 transition-colors">ZenSheet</a> &copy; 2026
+        </div>
+    </div>
+
+    <script>
+        function calculator() {
+            return {
+                // Calculator Data
+                belanja: 0,
+                makan: 0,
+                formattedBelanja: '',
+                formattedMakan: '',
+                currentDate: new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+
+                // Items Data
+                items: [],
+                newItemName: '',
+                newItemPrice: '',
+                searchQuery: '',
+
+                // Cloud Data
+                googleScriptUrl: 'https://script.google.com/macros/s/AKfycbw6lrYEEZM8Ll6sLElFBAVSbloEy7Tkthe8VvvIW3WYttA_XbHWsSCbZ8ltpXCvvzbw/exec',
+
+                init() {
+                    this.loadData();
+                },
+
+                // Computed
+                get profit() {
+                    return Math.round(this.belanja * 0.20);
+                },
+
+                get netProfit() {
+                    return this.profit - this.makan;
+                },
+
+                get filteredItems() {
+                    if (!this.searchQuery) return this.items;
+                    return this.items.filter(i =>
+                        i.name.toLowerCase().includes(this.searchQuery.toLowerCase())
+                    );
+                },
+
+                // Calculator Logic
+                formatInput(field) {
+                    if (field === 'belanja') {
+                        let val = this.formattedBelanja.replace(/\D/g, '');
+                        this.belanja = val ? parseInt(val) : 0;
+                        this.formattedBelanja = this.formatNumber(this.belanja);
+                    } else if (field === 'makan') {
+                        let val = this.formattedMakan.replace(/\D/g, '');
+                        this.makan = val ? parseInt(val) : 0;
+                        this.formattedMakan = this.formatNumber(this.makan);
+                    }
+                    this.saveData();
+                },
+
+                // Item Logic
+                addItem() {
+                    if (!this.newItemName || !this.newItemPrice) return;
+                    this.items.push({
+                        id: Date.now(),
+                        name: this.newItemName,
+                        price: parseInt(this.newItemPrice)
+                    });
+                    this.newItemName = '';
+                    this.newItemPrice = '';
+                    this.saveData();
+                },
+
+                deleteItem(itemToDelete) {
+                    if (confirm('Hapus barang ini?')) {
+                        this.items = this.items.filter(i => i.id !== itemToDelete.id);
+                        this.saveData();
+                    }
+                },
+
+                // Sync Logic
+                async syncToGoogle() {
+                    if (!this.googleScriptUrl) return alert("Isi URL Script dulu!");
+
+                    const btn = document.activeElement;
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                    btn.disabled = true;
+
+                    try {
+                        const payload = {
+                            belanja: this.belanja,
+                            makan: this.makan,
+                            items: this.items,
+                            lastUpdated: new Date().toISOString()
+                        };
+
+                        await fetch(this.googleScriptUrl, {
+                            method: 'POST',
+                            mode: 'no-cors',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        alert("Sukses Push ke Cloud!");
+                        this.saveData(); // Save URL
+                    } catch (err) {
+                        alert("Gagal: " + err.message);
+                    } finally {
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                    }
+                },
+
+                async pullFromGoogle() {
+                    if (!this.googleScriptUrl) return alert("Isi URL Script dulu!");
+                    if (!confirm("Data di sini akan DITIMPA dengan data dari Cloud. Lanjut?")) return;
+
+                    const btn = document.activeElement;
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                    btn.disabled = true;
+
+                    try {
+                        const response = await fetch(this.googleScriptUrl);
+                        if (!response.ok) throw new Error("Network Error");
+
+                        const data = await response.json();
+
+                        // Restore Data
+                        this.belanja = data.belanja || 0;
+                        this.makan = data.makan || 0;
+                        this.items = data.items || [];
+
+                        // Refresh Inputs
+                        if (this.belanja > 0) this.formattedBelanja = this.formatNumber(this.belanja);
+                        if (this.makan > 0) this.formattedMakan = this.formatNumber(this.makan);
+
+                        this.saveData();
+                        alert("Sukses Pull Data!");
+                    } catch (err) {
+                        alert("Gagal Pull: " + err.message);
+                    } finally {
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                    }
+                },
+
+                // Utilities
+                formatNumber(num) {
+                    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                },
+
+                formatRupiah(num) {
+                    return 'Rp ' + this.formatNumber(num);
+                },
+
+                reset() {
+                    if (confirm('Reset angka kalkulator? (Barang tidak akan dihapus)')) {
+                        this.belanja = 0;
+                        this.makan = 0;
+                        this.formattedBelanja = '';
+                        this.formattedMakan = '';
+                        this.saveData();
+                    }
+                },
+
+                saveData() {
+                    const data = {
+                        belanja: this.belanja,
+                        makan: this.makan,
+                        items: this.items,
+                        googleScriptUrl: this.googleScriptUrl
+                    };
+                    localStorage.setItem('warungSyifaSimple', JSON.stringify(data));
+                },
+
+                loadData() {
+                    const saved = localStorage.getItem('warungSyifaSimple');
+                    if (saved) {
+                        const data = JSON.parse(saved);
+                        this.belanja = data.belanja || 0;
+                        this.makan = data.makan || 0;
+                        this.items = data.items || [];
+                        this.googleScriptUrl = data.googleScriptUrl || '';
+
+                        if (this.belanja > 0) this.formattedBelanja = this.formatNumber(this.belanja);
+                        if (this.makan > 0) this.formattedMakan = this.formatNumber(this.makan);
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>
