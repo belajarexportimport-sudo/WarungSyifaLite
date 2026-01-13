@@ -343,18 +343,46 @@
                     },
 
                     downloadPDF() {
-                        const element = document.getElementById('report-content');
-                        const filename = `Laporan_WarungSyifa_${this.filterStart}_sd_${this.filterEnd}.pdf`;
+                        const content = document.getElementById('report-content').innerHTML;
+                        const printWindow = window.open('', '', 'height=600,width=400');
 
-                        const opt = {
-                            margin: 10,
-                            filename: filename,
-                            image: { type: 'jpeg', quality: 0.98 },
-                            html2canvas: { scale: 2 },
-                            jsPDF: { unit: 'mm', format: 'a6', orientation: 'portrait' } // Ukuran struk/A6
-                        };
+                        // Buat halaman cetak minimalis & bersih
+                        printWindow.document.write('<html><head><title>Laporan Warung Syifa</title>');
+                        printWindow.document.write('<style>');
+                        printWindow.document.write('body { font-family: sans-serif; padding: 20px; text-align: center; }');
+                        printWindow.document.write('.header { margin-bottom: 20px; border-bottom: 2px dashed #ccc; padding-bottom: 10px; }');
+                        printWindow.document.write('.row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px; }');
+                        printWindow.document.write('.bold { font-weight: bold; }');
+                        printWindow.document.write('.total { border-top: 2px dashed #000; padding-top: 10px; margin-top: 10px; font-size: 14px; font-weight: bold; color: blue; }');
+                        printWindow.document.write('</style>');
+                        printWindow.document.write('</head><body>');
 
-                        html2pdf().set(opt).from(element).save();
+                        // Re-construct clean HTML structure specifically for print
+                        printWindow.document.write('<div class="header">');
+                        printWindow.document.write('<h2>Warung Syifa</h2>');
+                        printWindow.document.write('<p>Laporan Periode: ' + this.formatDateID(this.filterStart) + ' - ' + this.formatDateID(this.filterEnd) + '</p>');
+                        printWindow.document.write('</div>');
+
+                        printWindow.document.write('<div class="content">');
+                        printWindow.document.write('<div class="row"><span>Total Hari:</span><span class="bold">' + this.reportSummary.days + ' Hari</span></div>');
+                        printWindow.document.write('<div class="row"><span>Total Belanja:</span><span class="bold">' + this.formatRupiah(this.reportSummary.totalBelanja) + '</span></div>');
+                        printWindow.document.write('<div class="row"><span>Est. Profit (20%):</span><span class="bold">' + this.formatRupiah(this.reportSummary.totalProfit) + '</span></div>');
+                        printWindow.document.write('<div class="row"><span>Makan Harian:</span><span class="bold">' + this.formatRupiah(this.reportSummary.totalMakan) + '</span></div>');
+                        printWindow.document.write('<div class="row total"><span>SISA BERSIH:</span><span>' + this.formatRupiah(this.reportSummary.totalNet) + '</span></div>');
+                        printWindow.document.write('</div>');
+
+                        printWindow.document.write('<p style="font-size:10px; color:#888; margin-top:20px;">Dicetak otomatis oleh Warung Syifa Lite</p>');
+
+                        printWindow.document.write('</body></html>');
+
+                        printWindow.document.close();
+                        printWindow.focus();
+
+                        // Auto Print after short delay
+                        setTimeout(() => {
+                            printWindow.print();
+                            printWindow.close();
+                        }, 500);
                     },
 
                     formatDateID(dateString) {
