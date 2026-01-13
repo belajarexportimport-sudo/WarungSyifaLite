@@ -275,6 +275,12 @@
                         this.filterStart = today;
                         this.filterEnd = today;
                         this.loadData();
+
+                        // AUTO-FIX: Check if specific typo exists in local storage URL
+                        if (this.googleScriptUrl.includes('HWsSC')) {
+                            this.googleScriptUrl = this.googleScriptUrl.replace('HWsSC', 'HWvSC');
+                            this.saveData(); // Save the fix
+                        }
                     },
 
                     // ... Computed & formatInput ...
