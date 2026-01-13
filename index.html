@@ -354,6 +354,7 @@
                         printWindow.document.write('.row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px; }');
                         printWindow.document.write('.bold { font-weight: bold; }');
                         printWindow.document.write('.total { border-top: 2px dashed #000; padding-top: 10px; margin-top: 10px; font-size: 14px; font-weight: bold; color: blue; }');
+                        printWindow.document.write('@media print { .no-print { display: none !important; } }'); // Hide button when printing
                         printWindow.document.write('</style>');
                         printWindow.document.write('</head><body>');
 
@@ -371,6 +372,11 @@
                         printWindow.document.write('<div class="row total"><span>SISA BERSIH:</span><span>' + this.formatRupiah(this.reportSummary.totalNet) + '</span></div>');
                         printWindow.document.write('</div>');
 
+                        printWindow.document.write('<div class="no-print" style="margin-top:20px; border-top:1px solid #eee; padding-top:20px;">');
+                        printWindow.document.write('<button onclick="window.print()" style="background:blue; color:white; padding:10px 20px; border:none; border-radius:5px; font-weight:bold; cursor:pointer;">Cetak / Simpan PDF</button>');
+                        printWindow.document.write('<p style="font-size:10px; color:#aaa; margin-top:10px;">(Pilih "Save as PDF" di menu printer)</p>');
+                        printWindow.document.write('</div>');
+
                         printWindow.document.write('<p style="font-size:10px; color:#888; margin-top:20px;">Dicetak otomatis oleh Warung Syifa Lite</p>');
 
                         printWindow.document.write('</body></html>');
@@ -378,11 +384,7 @@
                         printWindow.document.close();
                         printWindow.focus();
 
-                        // Auto Print after short delay
-                        setTimeout(() => {
-                            printWindow.print();
-                            printWindow.close();
-                        }, 500);
+                        // Hapus Auto Print agar user bisa lihat dulu
                     },
 
                     formatDateID(dateString) {
